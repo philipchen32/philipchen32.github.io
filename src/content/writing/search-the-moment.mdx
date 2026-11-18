@@ -6,7 +6,7 @@ tags: [Search, Multimodal]
 toc: true
 ---
 
-Watch the white hood at the bottom of the frame. A group of cyclists rides across our path, and our car slows almost to a stop. I wanted to be able to ask a driving archive for more moments like that.
+The white hood at the bottom of the frame is our car. It slows almost to a stop as a group of cyclists crosses ahead. I wanted to find more clips where those two things happen at the same time.
 
 <figure>
   <video controls playsinline preload="none" width="960" height="726"
@@ -21,23 +21,21 @@ Watch the white hood at the bottom of the frame. A group of cyclists rides acros
   </figcaption>
 </figure>
 
-A filter like `object_type = cyclist` finds a rider waiting at the curb just as easily as one cutting across our lane. If I had a reliable label for the crossing itself, I’d use it. With a presence label, I need to search what’s happening in the video.
-
-Say a cyclist crosses in the first few seconds and our car brakes for a red light toward the end. I’d waste a review slot if that clip came back for a crossing while our car was slowing.
+A filter like `object_type = cyclist` can find footage of a rider waiting at the curb. Without a reliable label for crossings, I have to look for the action in the footage itself. And timing matters. Say a cyclist crosses early in the clip and our car brakes for a red light near the end. That clip has both things I asked for, several seconds apart.
 
 ## Choose the unit of search
 
-I’d use a whole-clip embedding to find footage near a junction. For a crossing, I cut the clip into shorter windows so the encoder has less unrelated footage to summarize and I know which stretch of the speed trace to check.
+If I’m looking for footage near a junction, an embedding for the whole clip will do. A crossing can be over in a few seconds, so I embed shorter windows and check the speed over the same stretch.
 
-I start a six-second window every four seconds. In a 20-second clip, the last window starts at 16 seconds and runs to the end. Overlapping by two seconds gives an event near a cut a better chance of appearing in one piece. It also means more vectors to store and more hits from the same clip.
+I start a six-second window every four seconds. In a 20-second clip, the last window starts at 16 seconds and runs to the end. The two-second overlap helps catch crossings that straddle a cut. It costs more vectors, and the same crossing can show up in two results.
 
 <figure>
   <img class="window-timeline" src="/media/search-the-moment/window-timeline.svg" width="600" height="264" loading="lazy"
     alt="Five overlapping windows on a twenty-second timeline: 0–6, 4–10, 8–14, 12–18, and 16–20 seconds. The 8–14 second window is highlighted." />
-  <figcaption>Each window starts four seconds after the previous one. The last window ends at the clip boundary.</figcaption>
+  <figcaption>Five windows from one 20-second clip.</figcaption>
 </figure>
 
-For each window, I sample eight frames and encode them together as one 256-dimensional vector. The model maps the text query into that same vector space so I can rank the windows by similarity. I calculate the motion field separately. I take the last valid speed sample in the window, subtract the first, and divide by the time between them.
+For each window, I sample eight frames and encode them together as one 256-dimensional vector. The model embeds the text query in the same space, so I can rank the windows by similarity. The motion field comes from the speed trace. I subtract the first valid speed sample from the last and divide by the time between those samples.
 
 ## Keep conditions at the same granularity
 
@@ -50,18 +48,16 @@ I search for “Cyclists ride across the road ahead at a junction” and use a m
     <source src="/media/search-the-moment/query-and-filter.mp4" type="video/mp4" />
     <a href="/media/search-the-moment/query-and-filter.mp4">Download the query clip</a>.
   </video>
-  <figcaption>I enter the crossing description and set the motion filter on the same search.</figcaption>
+  <figcaption>The motion filter uses the speed of the car carrying the camera.</figcaption>
 </figure>
 
-In the red-light example, the two events happen in different parts of the clip. The crossing might rank well in the 0–6 second window, and the 12–18 second window might pass the speed filter. The search needs to check the speed on the same window it ranks. Otherwise the red-light stop can count as braking during the crossing.
-
-Six seconds is still a fairly wide interval. To see whether we started braking before the cyclist entered the lane, I’d line up the video with the timestamped speed trace.
+In the red-light example, the crossing might rank well in the first six seconds and the stop might pass the filter in the window from 12 to 18 seconds. Checking speed on the window I’m ranking keeps that later stop from counting as a match. If I want to know whether we started braking before the cyclist entered the lane, I still need to line up the footage with the timestamped speed trace.
 
 ## Model the clip and its windows
 
-One option is a row per window and a separate record for the source clip. That’s handy if I need to re-embed or delete windows one at a time. The application follows the clip ID to find the video and coordinates updates that affect both records. To search for crossings in a particular city, I could first find the clip IDs for that city, then search only their windows.
+A row per window makes sense if I need to re-embed or delete windows one at a time. With a separate clip record, the app follows the clip ID to find the video and coordinates updates that touch both records. For a city-specific query, it could look up the clips in that city first and limit the window search to those IDs.
 
-In my local Milvus 3.0.2 setup, I had a bounded set of windows that I managed with the clip. I kept them in one entity per clip, in a StructArray called `observations`. Each element holds the vector, timestamps, and motion fields for one interval.
+I had a bounded set of windows per clip and managed them together. In my local Milvus 3.0.2 setup, I stored one entity per clip and put its windows in a StructArray called `observations`. Each window has the timestamps and motion data alongside its vector.
 
 <figure class="struct-figure">
   <div class="struct-record">
@@ -95,7 +91,7 @@ In my local Milvus 3.0.2 setup, I had a bounded set of windows that I managed wi
   <figcaption>Two windows shown inside one clip. Each holds its own interval, video embedding, and motion fields.</figcaption>
 </figure>
 
-I search `observations[window_vector]` and use `element_filter` to check the motion fields on each window before it can participate in the search.
+I search `observations[window_vector]`. The `element_filter` limits the search to windows with a motion reading that passes the cutoff.
 
 ```text
 element_filter(
@@ -105,11 +101,11 @@ element_filter(
 )
 ```
 
-The video can live in object storage with either layout. The app still has to resolve the media reference and seek to the matched offset.
+With either layout, I can keep the video in object storage. The app opens the media from its reference and seeks to the start of the match.
 
 ## Return the match with its context
 
-I screened 530 recordings using cyclist annotations and the camera car’s position data, then watched the candidate windows. These three clips come from different recordings. Each shows a rider crossing ahead and passes the −0.5 m/s² cutoff.
+I screened 530 recordings using cyclist annotations and the car’s position data, then watched the candidate windows. The three clips are from different recordings. In each one, a rider crosses ahead and the car slows at an average rate of at least 0.5 m/s² over the window.
 
 <figure class="crossing-results">
   <div class="crossing-results-heading">
@@ -150,15 +146,15 @@ I screened 530 recordings using cyclist annotations and the camera car’s posit
   </figcaption>
 </figure>
 
-For these three clips I used labels and telemetry to find candidates. I’d want the same view for vector search results, with the clip ID and matched time range together. I can send that pair to a teammate, and they can jump to the same moment or scrub back to see the approach.
+I’d use this same view for the vector search hits and include the clip ID and time range on each result. With both, a teammate can jump to the crossing and scrub back to see how the car approached it.
 
-Two overlapping windows can both catch the same crossing. When review time is tight, I’d group by clip ID and show the best window from each recording. I’d keep individual hits when the job is to find several events in one drive. Grouping by clip ID still leaves me to check whether two clips show the same encounter.
+For a quick review, I’d group by clip ID and show the highest-ranked window from each clip. If I’m looking for several events in one drive, I’d keep the individual hits. Two clips can still contain the same encounter, so I’d check for duplicates during review.
 
 ## Decide what to review next
 
-If I’m investigating riders who emerge from behind parked cars, I’d keep some clear crossings for comparison and search for those occluded approaches next. If I keep finding the same few encounters, I’d ask the collection team for more routes with cars parked close to crossings.
+Next I’d look for cyclists who come out from behind parked cars and keep some unobstructed crossings for comparison. If the same few encounters keep turning up, I’d ask the collection team for more routes with parking close to crossings.
 
-For the search workflow, I’d track how long it takes to get a shortlist and how many distinct encounters survive review. To measure retrieval quality, I’d use queries with human judgments on which clips match. To check whether the vehicle handles the crossings better, I’d run a separate test on encounters held out from training.
+I’d time how long it takes to build a shortlist and count how many distinct encounters make it through review. To check the search ranking, I’d have people judge which clips match each query. I’d test the vehicle separately on crossings it never saw during training.
 
 ## References
 
