@@ -8,8 +8,17 @@ const socials = site.social.filter(({ url }) => url);
     <header class="page-heading"><h1>About</h1></header>
     <div class="prose">
       <p>{site.bio} My work includes vector search, retrieval-augmented generation, and search across images and video.</p>
-      <p>Before Zilliz, I built software for server operations at Meta and worked on manufacturing workflows at First Resonance.</p>
-      <p>As a consultant, I built RAG systems for companies across industries.</p>
+      <section aria-labelledby="background">
+        <h2 id="background">Before Zilliz</h2>
+        <p>At Meta, I worked on infrastructure performance and capacity planning for globally distributed services. I also built software for server operations, including hardware refreshes.</p>
+        <p>At First Resonance, a manufacturing software startup, I worked as an engineer embedded with aerospace and nuclear energy teams. I debugged data sync and integrations and built software for factory workflows.</p>
+        <p>As a consultant, I built RAG systems for companies across industries.</p>
+      </section>
+      <section aria-labelledby="outside-work">
+        <h2 id="outside-work">Outside work</h2>
+        <p>I’m from Los Angeles, have lived in Madrid and Taipei, and now live in the San Francisco Bay Area. I speak Mandarin, Cantonese, Spanish, and English.</p>
+        <p>I’m into wrestling and boxing, and I love to cook.</p>
+      </section>
       {(socials.length > 0 || site.email) && <section aria-labelledby="contact">
         <h2 id="contact">Contact</h2>
         <ul class="contact-links" role="list">
