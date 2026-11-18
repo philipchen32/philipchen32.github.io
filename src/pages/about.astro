@@ -5,20 +5,18 @@ const socials = site.social.filter(({ url }) => url);
 ---
 <Base title="About" description={site.bio} image="/social/about.png">
   <div class="shell page-space about-page">
-    <header class="page-heading">
-      <span class="accent" aria-hidden="true"></span>
-      <h1>About</h1>
-    </header>
+    <header class="page-heading"><h1>About</h1></header>
     <div class="prose">
-      <p>{site.bio}</p>
-      <p>I use this site to keep technical notes, write through questions about how systems work, and collect experiments and talks worth revisiting.</p>
-      {(socials.length > 0 || site.email) && <>
-        <h2>Contact</h2>
-        <ul>
+      <p>{site.bio} My work includes vector search, retrieval-augmented generation, and search across images and video.</p>
+      <p>Before Zilliz, I built software for server operations at Meta and worked on manufacturing workflows at First Resonance.</p>
+      <p>As a consultant, I built RAG systems for companies across industries.</p>
+      {(socials.length > 0 || site.email) && <section aria-labelledby="contact">
+        <h2 id="contact">Contact</h2>
+        <ul class="contact-links" role="list">
           {socials.map(({ label, url }) => <li><a href={url}>{label}</a></li>)}
           {site.email && <li><a href={`mailto:${site.email}`}>Email</a></li>}
         </ul>
-      </>}
+      </section>}
     </div>
   </div>
 </Base>

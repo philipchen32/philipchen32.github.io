@@ -1,27 +1,28 @@
 ---
 title: Search the moment, return the scene
-description: A short note on choosing what to search and what to return in a video retrieval system.
+description: How I used Milvus to return a driving clip and the exact window that matched the query.
 published: 2026-11-18
 type: Note
 tags: [Search, Multimodal, Milvus]
-toc: true
 ---
 
-Imagine looking for a cyclist crossing at a junction while the vehicle slows. A clip can contain all three clues even if they occur at different times. For data curation, the useful result is a clip you can review and a timestamp that tells you why it matched.
+Say you’re looking for footage of a cyclist crossing at an intersection while the vehicle slows. If the cyclist appears at the start and the vehicle brakes at the end, the clip contains both cues and still misses the event you asked for.
+
+In my Milvus demo, the highlighted match was the 8–14 second window. The candidate result included the parent clip and that time range, so a reviewer could jump to the match and decide whether the clip belonged in the dataset.
 
 ## Choose the unit of search
 
-A scene-level representation is useful for broad context. Smaller windows give the system a chance to find short events that a clip summary might miss. The two levels answer different questions, so write down the unit that needs to match and the unit a reviewer expects to receive.
+A scene-level embedding can help find clips set at an intersection. For a query about something happening while the vehicle slows, I search shorter windows and apply the motion filter to the same window as the semantic match.
 
-| Query need | Search unit | Return to the reviewer |
+| Query | Search unit | Return |
 | --- | --- | --- |
-| Find clips set at an intersection | Scene | Clip |
-| Find a cyclist crossing while the vehicle slows | Time window with both conditions | Clip and matching time range |
+| Clips set at an intersection | Whole clip | Clip |
+| A cyclist crossing while the vehicle slows | Window where both conditions hold | Clip and matching time range |
 
 ## Keep conditions at the same granularity
 
-If a semantic match applies to one window and the motion filter applies to another, accepting the clip can turn two partial matches into a misleading result. Evaluate the conditions at the window level when the question requires them to hold together, then group or rank the qualifying windows by their parent clip.
+I used Milvus StructArray to keep each window’s embedding, timestamps, and motion metadata together under its parent clip. That gives the query a place to apply both conditions and gives the reviewer a timestamp to inspect. The same distinction comes up in document search when a passage justifies the match and the full document provides context.
 
 ## References
 
-- [Zilliz webinar on hierarchical multimodal search for data curation](https://zilliz.com/event/hierarchical-multimodal-search-autonomous-driving-webinar). The webinar covers scene- and object-level retrieval, window-level filtering, and preserving parent context with Milvus StructArray.
+- [Zilliz webinar on hierarchical multimodal search for data curation](https://zilliz.com/event/hierarchical-multimodal-search-autonomous-driving-webinar)

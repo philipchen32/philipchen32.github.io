@@ -18,10 +18,10 @@ const image = data.draft ? '/social/default.png' : `/social/post/${entry.id}.png
   <article class="shell article-page">
     <header class="article-header">
       <a class="back-link mono" href="/writing/">← All writing</a>
-      <p class="eyebrow"><span class="accent"></span>{data.draft ? `Draft · ${data.type}` : data.type}</p>
       <h1>{data.title}</h1>
       <p class="article-description">{data.description}</p>
       <div class="article-meta mono">
+        <span>{data.draft ? `Draft · ${data.type}` : data.type}</span>
         <span>{site.name}</span>
         <time datetime={data.published.toISOString()}>{formatDate(data.published)}</time>
         {data.updated && <span>Updated <time datetime={data.updated.toISOString()}>{formatDate(data.updated)}</time></span>}

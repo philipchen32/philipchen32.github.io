@@ -55,7 +55,7 @@ const links = [{ label: 'Writing', href: '/writing/' }, { label: 'About', href: 
     <a class="skip" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="shell header-inner">
-        <a class="identity" href="/">{site.name}</a>
+        {Astro.url.pathname !== "/" && <a class="identity" href="/">{site.name}</a>}
         <nav aria-label="Main navigation">
           {links.map(({ label, href }) => (
             <a href={href} aria-current={Astro.url.pathname.startsWith(href) ? (Astro.url.pathname === href ? 'page' : 'location') : undefined}>{label}</a>
@@ -69,7 +69,6 @@ const links = [{ label: 'Writing', href: '/writing/' }, { label: 'About', href: 
     </main>
     <footer class="site-footer">
       <div class="shell footer-inner">
-        <a class="identity" href="/">{site.name}</a>
         <nav aria-label="Follow and contact">
           <a href="/rss.xml">RSS</a>
           {socials.map(({ label, url }) => <a href={url}>{label}</a>)}

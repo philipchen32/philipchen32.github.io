@@ -36,24 +36,20 @@ export const GET: APIRoute = async ({ props }) => {
       style: {
         width: 1200, height: 630, display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'flex-start', position: 'relative',
-        fontFamily: 'Inter', color: '#ffffff',
-        backgroundImage: 'radial-gradient(ellipse at bottom right, #1c2257, #000000 63%)',
+        fontFamily: 'Inter', color: '#ffffff', background: '#000000',
       },
       children: [
-        { type: 'div', props: { style: {
-          position: 'absolute', display: 'flex', top: 26, left: 26, width: 1146, height: 576, border: '1px solid #25283a', borderRadius: 20,
-        } } },
         { type: 'div', props: { style: {
           marginLeft: 84, width: 74, height: 5, borderRadius: 3, marginBottom: 28,
           backgroundImage: 'linear-gradient(135deg, #49BCFF 0%, #175FFF 30%, #7F47FF 65%, #C84CFF 100%)',
         } } },
         { type: 'div', props: { style: {
-          marginLeft: 84, color: '#49bcff', fontFamily: 'IBM Plex Mono', fontSize: 22, letterSpacing: 3,
-          textTransform: 'uppercase', marginBottom: 26,
+          marginLeft: 84, color: '#a9b0c0', fontFamily: 'IBM Plex Mono', fontSize: 22, letterSpacing: 0.5,
+          marginBottom: 22,
         }, children: label } },
         { type: 'div', props: { style: {
           fontSize: title.length > 60 ? 60 : 78, fontWeight: 700, lineHeight: 1.08,
-          marginLeft: 84, letterSpacing: -3.5, width: 1010,
+          marginLeft: 84, letterSpacing: -2.5, width: 1010,
         }, children: shorten(title, 110) } },
         { type: 'div', props: { style: {
           marginLeft: 84, color: '#a9b0c0', fontFamily: 'IBM Plex Mono', fontSize: 23, marginTop: 28,
