@@ -1,0 +1,43 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { formatDate, getWriting, type WritingEntry } from '../../lib/writing';
+import { site } from '../../site.mjs';
+
+export async function getStaticPaths() {
+  return (await getWriting()).map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: WritingEntry };
+const { data } = entry;
+const { Content, headings } = await render(entry);
+const sections = headings.filter(({ depth }) => depth === 2 || depth === 3);
+const image = data.draft ? '/social/default.png' : `/social/post/${entry.id}.png`;
+---
+<Base title={data.title} description={data.description} {image} noindex={data.draft} article={data}>
+  <article class="shell article-page">
+    <header class="article-header">
+      <a class="back-link mono" href="/writing/">← All writing</a>
+      <p class="eyebrow"><span class="accent"></span>{data.draft ? `Draft · ${data.type}` : data.type}</p>
+      <h1>{data.title}</h1>
+      <p class="article-description">{data.description}</p>
+      <div class="article-meta mono">
+        <span>{site.name}</span>
+        <time datetime={data.published.toISOString()}>{formatDate(data.published)}</time>
+        {data.updated && <span>Updated <time datetime={data.updated.toISOString()}>{formatDate(data.updated)}</time></span>}
+      </div>
+      {data.tags.length > 0 && <ul class="tags" aria-label="Topics" role="list">
+        {data.tags.map((tag) => <li>{tag}</li>)}
+      </ul>}
+    </header>
+    {data.toc && sections.length > 0 && (
+      <nav class="toc" aria-label="On this page">
+        <p class="mono">On this page</p>
+        <ul role="list">
+          {sections.map(({ depth, slug, text }) => <li class:list={{ nested: depth === 3 }}><a href={`#${slug}`}>{text}</a></li>)}
+        </ul>
+      </nav>
+    )}
+    <div class="prose article-body"><Content /></div>
+  </article>
+</Base>

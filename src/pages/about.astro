@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../site.mjs';
+const socials = site.social.filter(({ url }) => url);
+---
+<Base title="About" description={site.bio} image="/social/about.png">
+  <div class="shell page-space about-page">
+    <header class="page-heading">
+      <span class="accent" aria-hidden="true"></span>
+      <h1>About</h1>
+    </header>
+    <div class="prose">
+      <p>{site.bio}</p>
+      <p>I use this site to keep technical notes, write through questions about how systems work, and collect experiments and talks worth revisiting.</p>
+      {(socials.length > 0 || site.email) && <>
+        <h2>Contact</h2>
+        <ul>
+          {socials.map(({ label, url }) => <li><a href={url}>{label}</a></li>)}
+          {site.email && <li><a href={`mailto:${site.email}`}>Email</a></li>}
+        </ul>
+      </>}
+    </div>
+  </div>
+</Base>

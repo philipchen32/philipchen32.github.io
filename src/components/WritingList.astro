@@ -1,0 +1,24 @@
+---
+import { formatDate, writingUrl, type WritingEntry } from '../lib/writing';
+
+interface Props { entries: WritingEntry[]; heading?: "h2" | "h3" }
+const { entries, heading: Heading = "h3" } = Astro.props;
+---
+{entries.length ? (
+  <ul class="writing-list" role="list">
+    {entries.map(({ id, data }) => (
+      <li class="writing-row">
+        <div class="entry-date"><time datetime={data.published.toISOString()}>{formatDate(data.published)}</time></div>
+        <div class="entry-detail">
+          <p class="entry-type mono">{data.draft ? 'Draft · ' : ''}{data.type}</p>
+          <Heading><a href={writingUrl(id)}>{data.title}</a></Heading>
+          <p class="entry-description">{data.description}</p>
+          {data.tags.length > 0 && <ul class="tags" aria-label="Topics" role="list">
+            {data.tags.map((tag) => <li>{tag}</li>)}
+          </ul>}
+        </div>
+        <span class="entry-arrow" aria-hidden="true">→</span>
+      </li>
+    ))}
+  </ul>
+) : <p class="empty-state">New articles and notes will appear here. You can <a href="/rss.xml">follow along by RSS</a>.</p>}

@@ -1,0 +1,43 @@
+---
+title: Article formatting preview
+description: A local draft for checking code highlighting, diagrams, tables, references and long headings.
+published: 2026-11-18
+updated: 2026-11-18
+tags: [Formatting, Draft]
+draft: true
+toc: true
+---
+
+This demonstration is for local preview. The data and identifiers below are illustrative.
+
+## Code and inline syntax
+
+The following function accepts a sequence of timestamps in milliseconds and keeps the times at or after a cutoff. The deliberately long comment lets readers verify that the code block scrolls in its own container.
+
+```python
+def after_cutoff(timestamps_ms: list[int], cutoff_ms: int) -> list[int]:
+    # The cutoff is inclusive so a timestamp exactly on the boundary belongs to the returned sequence.
+    return [timestamp for timestamp in timestamps_ms if timestamp >= cutoff_ms]
+```
+
+Use `cutoff_ms` to express the boundary in the same unit as the input.
+
+## A diagram with a caption
+
+<figure>
+  <div class="scroll-region" role="region" aria-label="Sequence diagram" tabIndex={0}>
+    <pre>{'input timestamps  →  inclusive cutoff  →  filtered sequence'}</pre>
+  </div>
+  <figcaption>Filtering preserves the order of the input.</figcaption>
+</figure>
+
+### A wide table
+
+| Input sequence in milliseconds | Inclusive cutoff in milliseconds | Returned sequence in input order | Reason the boundary value remains |
+| --- | --- | --- | --- |
+| 500, 1000, 1500 | 1000 | 1000, 1500 | The comparison includes equality |
+| 200, 400, 600 | 800 | Empty | Every timestamp precedes the cutoff |
+
+## References
+
+- [Python language reference on comparisons](https://docs.python.org/3/reference/expressions.html#comparisons)
