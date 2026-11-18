@@ -140,7 +140,28 @@ h3 { font-weight: 620; letter-spacing: -0.025em; }
 .prose th { background: var(--surface); color: var(--text); }
 .prose tr:last-child td { border-bottom: 0; }
 .prose img { max-width: 100%; height: auto; display: inline-block; border-radius: 8px; }
+.prose video { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--elevated); }
+.prose .window-timeline { display: block; width: 100%; }
+.struct-record { padding: clamp(0.8rem, 3vw, 1.25rem); border: 1px solid var(--border); border-radius: 10px; background: var(--elevated); }
+.struct-record-title { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem 0.8rem; font-size: 0.97rem; color: var(--text); }
+.struct-record-title span { color: var(--muted); font-size: 0.82rem; }
+.struct-array { margin-top: 0.65rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.struct-windows { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.65rem; margin-top: 0.75rem; }
+.struct-window { min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; }
+.struct-window strong { color: var(--text); font-size: 0.91rem; }
+.struct-window-match { border-color: #35658a; background: #0e1a29; }
+.prose .struct-window ul { list-style: none; padding: 0; margin: 0.4rem 0 0; font-size: 0.93rem; }
+.prose .struct-window li + li { margin-top: 0.1rem; }
 .prose figcaption { font-size: 0.88rem; color: var(--muted); margin-top: 0.55rem; }
+.prose .media-credit { display: block; margin-top: 0.35rem; }
+.crossing-results-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 0.8rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
+.crossing-results-heading strong { color: var(--text); font-size: 1rem; }
+.crossing-results-heading .mono, .crossing-results-grid .mono { color: var(--muted); font-size: 0.81rem; }
+.prose .crossing-results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.9rem; list-style: none; padding: 0; margin: 0.85rem 0; }
+.prose .crossing-results-grid li { min-width: 0; margin: 0; }
+.crossing-results-grid li strong, .crossing-results-grid li span { display: block; }
+.crossing-results-grid li strong { margin-top: 0.45rem; color: var(--text); font-size: 0.91rem; line-height: 1.3; }
+.crossing-results-grid li span { margin-top: 0.2rem; }
 .prose blockquote { margin-inline: 0; border-left: 3px solid var(--blue); padding-left: 1rem; color: var(--muted); }
 .heading-anchor { display: inline-block; padding-inline: 0.35em; color: var(--muted); font-family: var(--mono); font-size: 0.68em; text-decoration: none; vertical-align: middle; }
 .heading-anchor::before { content: '#'; }

@@ -1,0 +1,166 @@
+---
+title: Finding the right six seconds in driving footage
+description: How I combined text-to-video search and vehicle telemetry to find candidate moments in a driving archive and return them with context.
+published: 2026-11-18
+tags: [Search, Multimodal]
+toc: true
+---
+
+Watch the white hood at the bottom of the frame. A group of cyclists rides across our path, and our car slows almost to a stop. I wanted to be able to ask a driving archive for more moments like that.
+
+<figure>
+  <video controls playsinline preload="none" width="960" height="726"
+    poster="/media/search-the-moment/argoverse-crossing.webp"
+    aria-label="Front-camera footage showing the recording car slowing as a group of cyclists crosses ahead">
+    <source src="/media/search-the-moment/argoverse-crossing.mp4" type="video/mp4" />
+    <a href="/media/search-the-moment/argoverse-crossing.mp4">Download the six-second clip</a>.
+  </video>
+  <figcaption>
+    From the car’s position data, I estimate that it slows from 9.6 to 1.1 m/s over these six seconds.
+    <span class="media-credit">Driving clips and stills throughout this article: <a href="https://www.argoverse.org/av2.html">Argoverse 2 Sensor Dataset</a>, © 2021 Argo AI, LLC. Trimmed and resized. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</span>
+  </figcaption>
+</figure>
+
+A filter like `object_type = cyclist` finds a rider waiting at the curb just as easily as one cutting across our lane. If I had a reliable label for the crossing itself, I’d use it. With a presence label, I need to search what’s happening in the video.
+
+Say a cyclist crosses in the first few seconds and our car brakes for a red light toward the end. I’d waste a review slot if that clip came back for a crossing while our car was slowing.
+
+## Choose the unit of search
+
+I’d use a whole-clip embedding to find footage near a junction. For a crossing, I cut the clip into shorter windows so the encoder has less unrelated footage to summarize and I know which stretch of the speed trace to check.
+
+I start a six-second window every four seconds. In a 20-second clip, the last window starts at 16 seconds and runs to the end. Overlapping by two seconds gives an event near a cut a better chance of appearing in one piece. It also means more vectors to store and more hits from the same clip.
+
+<figure>
+  <img class="window-timeline" src="/media/search-the-moment/window-timeline.svg" width="600" height="264" loading="lazy"
+    alt="Five overlapping windows on a twenty-second timeline: 0–6, 4–10, 8–14, 12–18, and 16–20 seconds. The 8–14 second window is highlighted." />
+  <figcaption>Each window starts four seconds after the previous one. The last window ends at the clip boundary.</figcaption>
+</figure>
+
+For each window, I sample eight frames and encode them together as one 256-dimensional vector. The model maps the text query into that same vector space so I can rank the windows by similarity. I calculate the motion field separately. I take the last valid speed sample in the window, subtract the first, and divide by the time between them.
+
+## Keep conditions at the same granularity
+
+I search for “Cyclists ride across the road ahead at a junction” and use a motion filter of ≤ −0.5 m/s² on our car’s net speed-change rate.
+
+<figure>
+  <video controls playsinline preload="none" width="760" height="258"
+    poster="/media/search-the-moment/query-and-filter.webp"
+    aria-label="Search input with the cyclist-crossing query and the net slowing filter">
+    <source src="/media/search-the-moment/query-and-filter.mp4" type="video/mp4" />
+    <a href="/media/search-the-moment/query-and-filter.mp4">Download the query clip</a>.
+  </video>
+  <figcaption>I enter the crossing description and set the motion filter on the same search.</figcaption>
+</figure>
+
+In the red-light example, the two events happen in different parts of the clip. The crossing might rank well in the 0–6 second window, and the 12–18 second window might pass the speed filter. The search needs to check the speed on the same window it ranks. Otherwise the red-light stop can count as braking during the crossing.
+
+Six seconds is still a fairly wide interval. To see whether we started braking before the cyclist entered the lane, I’d line up the video with the timestamped speed trace.
+
+## Model the clip and its windows
+
+One option is a row per window and a separate record for the source clip. That’s handy if I need to re-embed or delete windows one at a time. The application follows the clip ID to find the video and coordinates updates that affect both records. To search for crossings in a particular city, I could first find the clip IDs for that city, then search only their windows.
+
+In my local Milvus 3.0.2 setup, I had a bounded set of windows that I managed with the clip. I kept them in one entity per clip, in a StructArray called `observations`. Each element holds the vector, timestamps, and motion fields for one interval.
+
+<figure class="struct-figure">
+  <div class="struct-record">
+    <div class="struct-record-title"><strong>Parent clip</strong><code>clip_id</code></div>
+    <div class="struct-array">
+      <div class="struct-record-title"><code>observations[]</code><span>StructArray</span></div>
+      <div class="struct-windows">
+        <div class="struct-window">
+          <strong>Window · 4–10 s</strong>
+          <ul role="list">
+            <li><code>window_id</code></li>
+            <li><code>start_s</code>, <code>end_s</code></li>
+            <li><code>window_vector</code></li>
+            <li><code>motion_available</code></li>
+            <li><code>net_speed_change_mps2</code></li>
+          </ul>
+        </div>
+        <div class="struct-window struct-window-match">
+          <strong>Window · 8–14 s</strong>
+          <ul role="list">
+            <li><code>window_id</code></li>
+            <li><code>start_s</code>, <code>end_s</code></li>
+            <li><code>window_vector</code></li>
+            <li><code>motion_available</code></li>
+            <li><code>net_speed_change_mps2</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Two windows shown inside one clip. Each holds its own interval, video embedding, and motion fields.</figcaption>
+</figure>
+
+I search `observations[window_vector]` and use `element_filter` to check the motion fields on each window before it can participate in the search.
+
+```text
+element_filter(
+  observations,
+  $[motion_available] == true
+  and $[net_speed_change_mps2] <= -0.5
+)
+```
+
+The video can live in object storage with either layout. The app still has to resolve the media reference and seek to the matched offset.
+
+## Return the match with its context
+
+I screened 530 recordings using cyclist annotations and the camera car’s position data, then watched the candidate windows. These three clips come from different recordings. Each shows a rider crossing ahead and passes the −0.5 m/s² cutoff.
+
+<figure class="crossing-results">
+  <div class="crossing-results-heading">
+    <strong>Cyclists crossing while our car slows</strong>
+    <span class="mono">3 reviewed windows</span>
+  </div>
+  <ul class="crossing-results-grid" role="list">
+    <li>
+      <video controls playsinline preload="none" width="960" height="726"
+        poster="/media/search-the-moment/argoverse-crossing.webp"
+        aria-label="A group of cyclists crosses ahead of the camera car at a stop line">
+        <source src="/media/search-the-moment/argoverse-crossing.mp4" type="video/mp4" />
+      </video>
+      <strong>Group at a stop line</strong>
+      <span class="mono">9.6 → 1.1 m/s</span>
+    </li>
+    <li>
+      <video controls playsinline preload="none" width="720" height="544"
+        poster="/media/search-the-moment/crossing-urban.webp"
+        aria-label="A cyclist rides across the camera car’s lane at a wide urban intersection">
+        <source src="/media/search-the-moment/crossing-urban.mp4" type="video/mp4" />
+      </video>
+      <strong>Wide city intersection</strong>
+      <span class="mono">5.7 → 1.2 m/s</span>
+    </li>
+    <li>
+      <video controls playsinline preload="none" width="720" height="544"
+        poster="/media/search-the-moment/crossing-residential.webp"
+        aria-label="The camera car slows almost to a stop as a cyclist crosses a residential junction">
+        <source src="/media/search-the-moment/crossing-residential.mp4" type="video/mp4" />
+      </video>
+      <strong>Residential junction</strong>
+      <span class="mono">9.6 → 0.1 m/s</span>
+    </li>
+  </ul>
+  <figcaption>
+    The numbers show the recording car’s estimated speed at the start and end of each six-second clip.
+  </figcaption>
+</figure>
+
+For these three clips I used labels and telemetry to find candidates. I’d want the same view for vector search results, with the clip ID and matched time range together. I can send that pair to a teammate, and they can jump to the same moment or scrub back to see the approach.
+
+Two overlapping windows can both catch the same crossing. When review time is tight, I’d group by clip ID and show the best window from each recording. I’d keep individual hits when the job is to find several events in one drive. Grouping by clip ID still leaves me to check whether two clips show the same encounter.
+
+## Decide what to review next
+
+If I’m investigating riders who emerge from behind parked cars, I’d keep some clear crossings for comparison and search for those occluded approaches next. If I keep finding the same few encounters, I’d ask the collection team for more routes with cars parked close to crossings.
+
+For the search workflow, I’d track how long it takes to get a shortlist and how many distinct encounters survive review. To measure retrieval quality, I’d use queries with human judgments on which clips match. To check whether the vehicle handles the crossings better, I’d run a separate test on encounters held out from training.
+
+## References
+
+- [StructArray filtering](https://milvus.io/docs/struct-array-operators.md)
+- [Grouping StructArray search results](https://milvus.io/docs/grouping-search-with-structarray.md)

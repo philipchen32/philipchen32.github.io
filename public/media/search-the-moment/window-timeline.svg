@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 264">
+  <rect width="600" height="264" rx="12" fill="#0c0e16"/>
+  <g stroke="#343b4d" stroke-width="1">
+    <path d="M36 47H564M36 47V55M141.6 47V55M247.2 47V55M352.8 47V55M458.4 47V55M564 47V55"/>
+    <path d="M36 59V238M141.6 59V238M247.2 59V238M352.8 59V238M458.4 59V238M564 59V238" stroke-dasharray="2 5"/>
+  </g>
+  <g text-anchor="middle" font-family="ui-monospace, monospace" font-size="20" fill="#a9b0c0">
+    <text x="36" y="33">0</text><text x="141.6" y="33">4</text><text x="247.2" y="33">8</text>
+    <text x="352.8" y="33">12</text><text x="458.4" y="33">16</text><text x="564" y="33">20 s</text>
+  </g>
+  <g fill="#191e2a" stroke="#535e74">
+    <rect x="36" y="66" width="158.4" height="29" rx="4"/>
+    <rect x="141.6" y="103" width="158.4" height="29" rx="4"/>
+    <rect x="352.8" y="177" width="158.4" height="29" rx="4"/>
+    <rect x="458.4" y="214" width="105.6" height="29" rx="4"/>
+  </g>
+  <rect x="247.2" y="140" width="158.4" height="29" rx="4" fill="#102c47" stroke="#49bcff"/>
+  <g text-anchor="middle" font-family="ui-monospace, monospace" font-size="21" fill="#f1f4fa">
+    <text x="115.2" y="88">0–6 s</text><text x="220.8" y="125">4–10 s</text>
+    <text x="326.4" y="162" fill="#a7dcff">8–14 s</text><text x="432" y="199">12–18 s</text>
+    <text x="511.2" y="236">16–20 s</text>
+  </g>
+</svg>
